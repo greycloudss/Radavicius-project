@@ -15,9 +15,10 @@ typedef struct {
 
 
 
-void login(info* x) {
+bool login(info* x) {
 	FILE* cache;
 	cache = fopen("database.bin", "rb+");
+	bool flag = false;
 	char username[30], password[30];
 	printf("Enter username: ");
 	fgets(username, 30, stdin);
@@ -29,14 +30,45 @@ void login(info* x) {
 	while (fread(&user, sizeof(info), 1, cache)) {
 		if (strcmp(username, user.user_id) == 0 && strcmp(password, user.pword) == 0) {
 			printf("Login successful\n");
-			return;
+			flag = true;
+			break;
 		}
 	}
 	printf("Incorrect credentials\n");
 	fclose(cache);
+	return flag;
 }
 
 char prompt(u_char instance) {
+	char sel[][30] = { {"Login"}, {"Register"}, {"Transfer"}, {"Balance"}, "Local Trasnfer", "Extern Transfer"}; // selection names
+	u_char sel_codes[][2] = { {2, 3}, {4, 5} }; /*{"Transfer"}, {"Balance"}, {""}};*/ // selection codes
+	// if this was lua or py this would be easier to do by just saying do x in pairs y;
+	int base = 0; //
+	int count = 0 + base; // basically max selections available on screen so every time enter is pressed count goes up
+	
+	bool state = true; //state if the selection changes
+	do {
+		if (GetAsyncKeyState(VK_TAB)) {
+			state = true;
+			instance = 0; //fuck around and youll need to log in again
+		}
+		if (GetAsyncKeyState(VK_UP) || GetAsyncKeyState(VK_DOWN))
+			++count;
+
+		if (count > 0)
+			count = -1;
+
+		if (GetAsyncKeyState(VK_RETURN)) {
+			state = true;
+			instance = count;
+		}
+		
+		if (true == state) {
+			//if ()
+		}
+
+	} while (1);
+	
 
 	return 0;
 }
@@ -44,6 +76,9 @@ char prompt(u_char instance) {
 
 void main() {
 	info x;
-	login_reg(&x);
+	u_char instance = 0;
+	while (1) {
+		
+	}
 
 }
