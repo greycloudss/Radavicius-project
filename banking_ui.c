@@ -15,47 +15,35 @@ typedef struct {
 
 
 
-void login_reg(u_char state, info* x) {
+void login(info* x) {
 	FILE* cache;
 	cache = fopen("database.bin", "rb+");
-	char tmp[2][5][30];
-	int count = 0, count1 = 0;
-	bool flag = false;
-	if (state == 1) { //login
-		while (count < 4) {
-			gets(tmp[count++]);
-		}
-
-		while (1) {
-			if (strcmp(tmp[0][1], fgets(tmp[1][1], 30, cache)) == 0) {
-				if (strcmp(tmp[0][count1], fgets(tmp[1][count1], 30, cache)) == 0) {
-					++count1;
-				}
-				else {
-					printf("Incorrect credentials");
-					break;
-				}
-				if (count1 == 4) {
-					flag = true;
-					printf("Credentials: %b", flag);
-				}
-			}
+	char username[30], password[30];
+	printf("Enter username: ");
+	fgets(username, 30, stdin);
+	printf("Enter password: ");
+	fgets(password, 30, stdin);
+	username[strcspn(username, "\n")] = 0; // remove trailing newline
+	password[strcspn(password, "\n")] = 0; // remove trailing newline
+	info user;
+	while (fread(&user, sizeof(info), 1, cache)) {
+		if (strcmp(username, user.user_id) == 0 && strcmp(password, user.pword) == 0) {
+			printf("Login successful\n");
+			return;
 		}
 	}
-	else { //register
-		
-		//fprintf("");
-	}
+	printf("Incorrect credentials\n");
 	fclose(cache);
 }
 
-int prompt( instance) {
-	
+char prompt(u_char instance) {
+
+	return 0;
 }
 
 
 void main() {
 	info x;
-	login_reg(1, &x);
+	login_reg(&x);
 
 }
