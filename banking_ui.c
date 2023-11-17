@@ -16,6 +16,7 @@ typedef struct {
 
 
 bool login(info* x) {
+	system("cls");
 	FILE* cache;
 	cache = fopen("database.bin", "rb+");
 	bool flag = false;
@@ -28,6 +29,7 @@ bool login(info* x) {
 	password[strcspn(password, "\n")] = 0; // remove trailing newline
 	info user;
 	while (fread(&user, sizeof(info), 1, cache)) {
+
 		if (strcmp(username, user.user_id) == 0 && strcmp(password, user.pword) == 0) {
 			printf("Login successful\n");
 			flag = true;
@@ -39,7 +41,7 @@ bool login(info* x) {
 	return flag;
 }
 
-char prompt(u_char instance, bool* status) {
+char prompt(u_char instance, bool status) {
 	char sel[][30] = { {"Login"}, {"Register"}, {"Transfer"}, {"Balance"}, {"Local transfer"}, {"Extern transfer" } }; // selection names
 	u_char sel_codes[][2] = { {0, 1}, {2, 3}, {4, 5} }; /*{"Transfer"}, {"Balance"}, {""}};*/ // selection codes
 	// if this was lua or py this would be easier to do by just saying do x in pairs y;
@@ -48,39 +50,42 @@ char prompt(u_char instance, bool* status) {
 
 	bool state = true; //state if the selection changes
 	do {
-		if (!(1 <= instance && true == status)) {
-
-			if (GetAsyncKeyState(VK_TAB)) {
-				state = true;
-				instance = 0; //fuck around and youll need to log in again
-			}
-			if (GetAsyncKeyState(VK_UP) || GetAsyncKeyState(VK_DOWN))
-				count = count ^ 1;
-			// we use xor (exclusive or) which basically is sum module 2; each time we press up or down it quite literally makes it a 0 or a 1 since we have 2 options in each menu screen
-
-			if (GetAsyncKeyState(VK_RETURN)) {
-				state = true;
-				instance = count;
-			}
-
-			if (true == state) {
-				//if ()
-			}
+		if (GetAsyncKeyState(VK_UP) || GetAsyncKeyState(VK_DOWN)) {
+			count = count ^ 1;
+			state = true;
 		}
-		else {
-			printf("fuck off");
-			return 0;
+		if (state == true) {
+			system("cls");
+			printf("--%d--", instance);
+			printf("[=--> %s <--=]\n(-- %s --)", sel[sel_codes[instance][count^1]], sel[sel_codes[instance][count]]);
+
+			state = false;
 		}
 
+		if (GetAsyncKeyState(VK_RETURN))
+			return instance += count;
+
+		if (GetAsyncKeyState(VK_TAB)) {
+			if (instance == 1)
+				status = false;
+			if ((instance >= 1) && (state == true)) {
+				return instance -= 1;
+			}
+			else {
+				return -instance;
+			}
+		}
+		Sleep(300);
 	} while (1);
 
 
-	return 0;
+	return instance;
 }
 
 
 void main() {
 	info x;
+	u_char bonk;
 	u_char instance = 0;
 	bool status = false;
 	while (1) {
@@ -88,7 +93,8 @@ void main() {
 			status = login(&x);
 
 		}
-
+		bonk = prompt(instance, status);
+		instance += bonk;
 	}
 
 }
