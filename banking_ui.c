@@ -11,7 +11,7 @@ typedef struct {
 	char user_id[10];
 	char pword[20];
 } info;
-
+/*
 bool regist(bool status) {
 	while (1) {
 		
@@ -19,7 +19,7 @@ bool regist(bool status) {
 
 
 	return status;
-}
+}*/
 
 bool login() {
 	system("cls");
@@ -122,5 +122,4 @@ void main() {
 		bonk = prompt(instance, status);
 		instance += bonk;
 	}
-
 }
