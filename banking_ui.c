@@ -38,9 +38,11 @@ bool regist() {
 	char prompts[][30] = { "enter your full name ", "enter your password ", "reenter your password " };
 	char sizes[3] = { 30, 20, 20 };
 	while (count < 3) {
+		printf("%d", count);
 		printf("%s ", prompts[count]);
-		if (scanf("%29s", &tmp[count]) == 1 && getchar() == '\n') {
-			if (sizeof(tmp[count]) < sizes[count]) {
+		if (scanf("%29s", &tmp[count]) == 1) {
+			printf("%d", strlen(tmp[count]));
+			if (strlen(tmp[count]) <= sizes[count]) {
 				if (count >= 2 && strcmp(tmp[1], tmp[2]) != 0) {
 					printf("Passwords do not match");
 					break;
@@ -86,7 +88,7 @@ bool login() {
 		if (scanf("%29s", &tmp[count]) != 0) {
 			// Remove the newline character from the input
 			tmp[count][strcspn(tmp[count], "\n")] = 0;
-			if (sizeof(tmp[count]) == sizers[count]) {
+			if (strlen(tmp[count]) <= sizers[count]) {
 				char line[100];
 				rewind(cache); // Reset the file pointer to the beginning of the file
 				while (fgets(line, sizeof(line), cache) != NULL) {
@@ -95,6 +97,10 @@ bool login() {
 					if (strcmp(line, tmp[count]) == 0) {
 						flags[count++] = true;
 						system("cls");
+						break;
+					}
+					else {
+						printf("Invalid input");
 						break;
 					}
 				}
@@ -174,8 +180,10 @@ void main() {
 		instance += bonk;
 		if (0 == instance) {
 			status = regist();
-			if(status == false)
+			if (status == false)
 				instance = 0;
+			else
+				instance = 1;
 		}
 		
 		//if instan
