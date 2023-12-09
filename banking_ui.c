@@ -110,20 +110,22 @@ bool login() {
 }
 
 
-void showTransfer() {
+int showTransfer() {
 	printf("Transfer function is under construction.\n");
 	Sleep(5000);
+	return -1;
 }
 
-void showBalance() {
+int showBalance() {
 	printf("Balance function is under construction.\n");
 	Sleep(5000);
+	return -1;
 }
 
 
 char prompt(u_char instance, bool status) {
 	char sel[][30] = { {"Login"}, {"Register"}, {"Transfer"}, {"Balance"}, {"Local transfer"}, {"Extern transfer"} };
-	u_char sel_codes[][2] = { {0, 1}, {2, 3}, {4, 5} };
+	u_char sel_codes[][2] = { {0, 1},{0, 0}, {3, 2}, {4, 5} };
 
 	int count = 0;
 	bool state = true;
@@ -139,35 +141,36 @@ char prompt(u_char instance, bool status) {
 
 		if (state == true) {
 			system("cls");
-			printf("[=--> %s <--=]\n(-- %s --)\n", sel[sel_codes[instance][count ^ 1]], sel[sel_codes[instance][count]]);
+			printf("[=--> %s <--=]\n(-- %s --)\n", sel[sel_codes[instance][count^1]], sel[sel_codes[instance][count]]);
+			printf("\n\n%d %d\n\n", count, instance);
 			state = false;
 		}
 
 		if (GetAsyncKeyState(VK_RETURN)) {
 			if (instance == 2) {
-				showTransfer();
-				return 0;
+				instance += showBalance();
+				return 1;
 			}
 			else if (instance == 3) {
-				showBalance();
-				return 0;
+				instance += showTransfer();
+				return 1;
 			}
 			else if (instance == 1) {
 				return instance;
 			}
 			else {
-				return instance += count;
+				return instance += 1;
 			}
 		}
 
 		if (GetAsyncKeyState(VK_TAB)) {
 			if (instance == 1)
 				status = false;
-			if ((instance >= 1) && (status == true)) {
+			if ((instance >= 2) && (status == true)) {
 				return instance -= 1;
 			}
 			else {
-				return -instance;
+				return 1;
 			}
 		}
 		Sleep(300);
@@ -176,18 +179,21 @@ char prompt(u_char instance, bool status) {
 	return instance;
 }
 
+/*
+I dont know how the main function works it just does, kinda
+*/
 void main() {
-	u_char bonk;
 	u_char instance = 0;
 	bool status = false;
 	while (1) {
+		instance += prompt(instance, status);
 		if (1 == instance) {
 			status = login();
 			if (status == false)
 				instance = 0;
+			else
+				instance = 1;
 		}
-		bonk = prompt(instance, status);
-		instance += bonk;
 		if (0 == instance) {
 			status = regist();
 			if (status == false)
