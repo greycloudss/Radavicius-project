@@ -7,145 +7,158 @@
 #include <assert.h>
 #define u_char unsigned char
 
-typedef struct {
-	char fname[30];
-	char user_id[10];
-	char pword[20];
-} info; // more or less useless since basically anything that is done is local in the function and only returns a T/F stat
-
-int id_gen() {
-	int gen_id;
-	srand((unsigned) time(NULL));
-	while (1) {
-		gen_id = (rand() % 9999999);
-		if (gen_id > 999999)
-			return gen_id;
-	}
-	return -1;
-}
-
-
 bool regist() {
 	/*
 	May god himself forgive me for this noodle code...
 	*/
-	system("cls");
-	char tmp[4][30];
+
 	FILE* cache;
 	cache = fopen("database.txt", "a+");
+	char prompts[][30] = { "Enter your full name: ", "Enter your password: ", "Reenter your password: " };
+	bool flags[3] = { false, false, false };
 	int count = 0;
-	bool states[3] = { false, false, false };
-	char prompts[][30] = { "enter your full name ", "enter your password ", "reenter your password " };
-	char sizes[3] = { 30, 20, 20 };
-	while (count < 3) {
-		printf("%d", count);
-		printf("%s ", prompts[count]);
-		if (scanf("%29s", &tmp[count]) == 1) {
-			printf("%d", strlen(tmp[count]));
-			if (strlen(tmp[count]) <= sizes[count]) {
-				if (count >= 2 && strcmp(tmp[1], tmp[2]) != 0) {
-					printf("Passwords do not match");
-					break;
-				} else 
-					states[count++] = true;
+	int size[3] = { 30, 20, 20 };
+	char tmp[3][30] = { 0 };
+
+	do {
+		system("cls");
+		printf("< Registration >\n%s", prompts[count]);
+		if (scanf("%29s", tmp[count]) == 1) {
+			if (strlen(tmp[count]) <= size[count]) {
+				if (count < 2) {
+					flags[count++] = true;
+				}
+				else if (count == 2) {
+					if (strcmp(tmp[1], tmp[2]) == 0) {
+						flags[count++] = true;
+					}
+					else {
+						printf("Passwords do not match. Please re-enter.\n");
+						count = 0;
+					}
+				}
 			}
-			else
-				printf("the input is too large it mustnt be more than %d characters\n", sizes[count]);
+			else {
+				printf("Invalid input\n");
+				count = 0;
+			}
 		}
 		else {
-			printf("invalid input\n");
-			while (getchar() != '\n')
-				;
+			printf("Invalid input\n");
+			count = 0;
+			scanf("%*s");
 		}
+	} while (count < 3);
 
-	}
 
-	int bonkers;
-	bonkers = id_gen();
-	assert(bonkers != -1);
-	for (int i = 0; i < 3; i++)
-		if (states[i] == false)
+	for (int i = 0; i < 3; ++i) {
+		if (!flags[i]) {
+			printf("Registration failed. Please try again.\n");
+			fclose(cache);
 			return false;
-	fprintf(cache, "%s, %d, %s", tmp[0], bonkers, tmp[1]);
-	fclose(cache);
+		}
+	}
+	time_t t1;
+	srand((unsigned)time(&t1));
+	char bonkers[7] = { 0 };
+	for (int i = 0; i < 6; ++i) {
+		char frac_id = (rand() % 10) + '0';
+		bonkers[i] = frac_id;
+	}
+	printf("\nName: %s, User id: %s, Password: %s", tmp[0], bonkers, tmp[1]);
 
+
+	fprintf(cache, "\n%s\n%s\n%s\n--------------", tmp[0], bonkers, tmp[1]);
+	fclose(cache);
+	Sleep(500);
 	return true;
 }
 
 bool login() {
-	system("cls");
-	FILE* cache = fopen("database.txt", "r+");
-	if (cache == NULL)
-		return false;
+	FILE* cache;
+	cache = fopen("database.txt", "r");
+	char prompts[][30] = { "Enter your full name: ", "Enter your user id: ", "Enter your password: " };
+	int count = 0;
+	int size[3] = { 30, 6, 20 };
+	char tmp[30];
+	char line[30];
 	bool flags[3] = { false, false, false };
-	char prompts[3][30] = { "enter your fname : ", "enter user id: ", "enter your password: " };
-	char tmp[3][30] = { 0 };
-	int sizers[3] = { 30, 10, 20 };
-	u_char count = 0;
-	while (count < 3) {
-		printf("%s", prompts[count]);
-		
-		if (scanf("%29s", &tmp[count]) != 0) {
-			// Remove the newline character from the input
-			tmp[count][strcspn(tmp[count], "\n")] = 0;
-			if (strlen(tmp[count]) <= sizers[count]) {
-				char line[100];
-				rewind(cache); // Reset the file pointer to the beginning of the file
-				while (fgets(line, sizeof(line), cache) != NULL) {
-					// Remove the newline character from the line
-					line[strcspn(line, "\n")] = 0; 
-					if (strcmp(line, tmp[count]) == 0) {
+	do {
+		system("cls");
+		printf("< login >\n%s", prompts[count]);
+		if (scanf("%29s", &tmp) == 1) {
+			if (strlen(tmp) <= size[count]) {
+				while (fgets(line, 30, cache) != NULL) {
+					if (strstr(line, tmp) != NULL) {
 						flags[count++] = true;
-						system("cls");
 						break;
 					}
 					else {
-						printf("Invalid input");
-						break;
+						count = 0;
 					}
 				}
 			}
-			else
-				printf("Input too long, must be %d characters long\n", sizers[count]);
 		}
-		else {
-			printf("invalid input");
-			while (getchar() != '\n')
-				;
-		}
-	}
+	} while (count < 3);
+
 	fclose(cache);
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 3; ++i)
 		if (flags[i] == false)
 			return false;
-	}
+
 	return true;
 }
 
+
+void showTransfer() {
+	printf("Transfer function is under construction.\n");
+	Sleep(5000);
+}
+
+void showBalance() {
+	printf("Balance function is under construction.\n");
+	Sleep(5000);
+}
+
+
 char prompt(u_char instance, bool status) {
-	char sel[][30] = { {"Login"}, {"Register"}, {"Transfer"}, {"Balance"}, {"Local transfer"}, {"Extern transfer" } }; // selection names
-	u_char sel_codes[][2] = { {0, 1}, {3, 2}, {4, 5} }; /*{"Transfer"}, {"Balance"}, {""}};*/ // selection codes
-	// if this was lua or py this would be easier to do by just saying do x in pairs y;
+	char sel[][30] = { {"Login"}, {"Register"}, {"Transfer"}, {"Balance"}, {"Local transfer"}, {"Extern transfer"} };
+	u_char sel_codes[][2] = { {0, 1}, {2, 3}, {4, 5} };
 
-	int count = 0; // basically max selections available on screen so every time enter is pressed count goes up
+	int count = 0;
+	bool state = true;
 
-	bool state = true; //state if the selection changes
 	do {
 		if (status == false && instance >= 1)
 			return 0;
+
 		if (GetAsyncKeyState(VK_UP) || GetAsyncKeyState(VK_DOWN)) {
 			count = count ^ 1;
 			state = true;
 		}
+
 		if (state == true) {
 			system("cls");
 			printf("[=--> %s <--=]\n(-- %s --)\n", sel[sel_codes[instance][count ^ 1]], sel[sel_codes[instance][count]]);
-
 			state = false;
 		}
 
-		if (GetAsyncKeyState(VK_RETURN))
-			return instance += count;
+		if (GetAsyncKeyState(VK_RETURN)) {
+			if (instance == 2) {
+				showTransfer();
+				return 0;
+			}
+			else if (instance == 3) {
+				showBalance();
+				return 0;
+			}
+			else if (instance == 1) {
+				return instance;
+			}
+			else {
+				return instance += count;
+			}
+		}
 
 		if (GetAsyncKeyState(VK_TAB)) {
 			if (instance == 1)
@@ -160,13 +173,10 @@ char prompt(u_char instance, bool status) {
 		Sleep(300);
 	} while (1);
 
-
 	return instance;
 }
 
-
 void main() {
-	info x;
 	u_char bonk;
 	u_char instance = 0;
 	bool status = false;
@@ -185,7 +195,5 @@ void main() {
 			else
 				instance = 1;
 		}
-		
-		//if instan
 	}
 }
