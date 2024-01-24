@@ -10,114 +10,202 @@
 #define MAX_USERS 1000
 
 typedef struct {
-    char name[50];
-    char password[50];
-    bool isLoggedIn;
+    bool status;
+    char name[18];
+    char password[18];
     int userID;
     double balance;
 } User;
 
-void registerUser(User* users, int* userCount);
-void loginUser(User* users, int userCount);
-void displayBalance(const User* user);
-void transferBalance(User* users, int userCount);
-int generateUserID(const User* users, int userCount);
-void readDatabase(User* users, int* userCount);
-void writeDatabase(const User* users, int userCount);
-
-// Read user data from database.bin file
-void readDatabase(User* users, int* userCount) {
-    FILE* file = fopen("database.bin", "rb");
-    if (file == NULL) {
-        *userCount = 0;
-        return;
-    }
-    fread(userCount, sizeof(int), 1, file);
-    fread(users, sizeof(User), *userCount, file);
-    fclose(file);
-}
-
-// Write user data to database.bin file
-void writeDatabase(const User* users, int userCount) {
-    FILE* file = fopen("database.bin", "wb");
-    fwrite(&userCount, sizeof(int), 1, file);
-    fwrite(users, sizeof(User), userCount, file);
-    fclose(file);
-}
-
-// Rest of the functions (registerUser, loginUser, generateUserID, etc.) with modifications to interact with the database
-
-// Generate a unique user ID
-int generateUserID(const User* users, int userCount) {
-    int uniqueID;
-    bool isUnique;
-    do {
-        isUnique = true;
-        uniqueID = rand() % 100000; // Random ID between 0 and 99999
-        for (int i = 0; i < userCount; i++) {
-            if (users[i].userID == uniqueID) {
-                isUnique = false;
-                break;
-            }
-        }
-    } while (!isUnique);
-    return uniqueID;
-}
-
-// Function to register a new user
-void registerUser(User* users, int* userCount) {
-    if (*userCount >= MAX_USERS) {
-        printf("\nRegistration failed: User limit reached.\n");
-        return;
-    }
-
-    printf("\nEnter your name: ");
-    scanf("%49s", users[*userCount].name);
-    printf("Enter your password: ");
-    scanf("%49s", users[*userCount].password);
-    users[*userCount].userID = generateUserID(users, *userCount);
-    users[*userCount].isLoggedIn = false;
-    users[*userCount].balance = 0.0;
-    (*userCount)++;
-    writeDatabase(users, *userCount);
-    printf("\nRegistration successful!\n");
-}
-
-// Function to login a user
-void loginUser(User* users, int userCount) {
-    char name[50], password[50];
-    printf("\nEnter your name: ");
-    scanf("%49s", name);
-    printf("Enter your password: ");
-    scanf("%49s", password);
-
-    for (int i = 0; i < userCount; i++) {
-        if (strcmp(users[i].name, name) == 0 && strcmp(users[i].password, password) == 0) {
-            users[i].isLoggedIn = true;
-            printf("\nLogin successful!\n");
-            return;
-        }
-    }
-    printf("\nLogin failed!\n");
-}
 
 
 //printing a somewhat centered thing
 void print(char string[]) {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     int ret = GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-
     printf("\n\n%*s\n", (csbi.dwSize.X + strlen(string)) / 2, string, csbi.dwSize.X - strlen(string) / 2, "");
 }
 
-int userInterface(bool *status, int instance, User *creds, int *userCount) {
+void dataWrite(const char file_path[], char x[], int num) {
+    //no need for a null check since the flag "+" creates a file database.bin
+    //int num is just a flag if the passed down var is a password its flag is 3
+    FILE* cache = fopen(file_path, "ab+");
+    char* mod = (char*) malloc(strlen(x));
+    if (num == 3) {
+        free(mod);
+        char* mod = (char*)malloc(strlen(x) + num);
+        for (int i = 0; i < num; ++i)
+            strcat(mod, "\n");
+    }
+
+    fwrite(mod, 1, sizeof(mod), cache);
+    free(mod);
+    fclose(cache);
+}
+
+void tostring(char str[], int num)
+{
+    int i, rem, len = 0, n;
+
+    n = num;
+    while (n != 0)
+    {
+        len++;
+        n /= 10;
+    }
+    for (i = 0; i < len; i++)
+    {
+        rem = num % 10;
+        num = num / 10;
+        str[len - (i + 1)] = rem + '0';
+    }
+    str[len] = '\0';
+}
+
+bool occuranceChecker(const char* file_path, const char* target_string, User* name) {
+    FILE* file = fopen(file_path, "rb+");
+    if (file == NULL) {
+        perror("Error opening file");
+        return true;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    rewind(file);
+
+    char* binary_data = (char*)malloc(file_size);
+    if (binary_data == NULL) {
+        perror("Memory allocation error");
+        fclose(file);
+        return true;
+    }
+
+    fread(binary_data, 1, file_size, file);
+    fclose(file);
+
+    char* found_position = strstr(binary_data, target_string);
+
+    if (found_position != NULL) {
+        strcpy(&name->name, target_string);
+        size_t index = found_position - binary_data;
+        return true;
+    }
+    else {
+        return false;
+    }
+
+    free(binary_data);
+}
+
+bool loginUser(User* creds) {
+    char cache_name[] = "database.bin";
+    bool state[] = { false, false, false };
+    const char prompts[][30] = { "Enter your username: ", "Enter your id: ", "Enter your password: " };
+    int count = 0;
+    char tmp[18];
+    print("Login");
+    while (count < 3) {
+        print(prompts[count]);
+        if (scanf("%18s", &tmp)) {
+            if (occuranceChecker(cache_name, tmp, &creds->name)) {
+                
+                state[count++] = true;
+            }
+            else return false;
+        }
+    }
+
+    return true;
+}
+
+int id_gen() {
+    char tmp[7] = { 0 };
+    User A;
+    while (1) {
+        int id = rand(time(NULL));
+        tostring(tmp, id);
+        if (occuranceChecker("database.bin", tmp, &A) == false)
+            return id;
+    }
+}
+
+
+
+bool registUser() {
+    char cache_name[] = "database.bin";
+    bool state[] = { false, false, false };
+    const char prompts[][30] = { "Enter your username: ", "Enter your password: ", "Reenter your password: " };
+    int count = 0;
+    char tmp[5][18] = { 0 };
+    User A;
+    const int sizes[] = { 18, 18, 18 };
+    print("Registration");
+    while (count < 3) {
+        print(prompts[count]);
+        if (scanf("%18s", &tmp[count]) == 1) {
+            if (occuranceChecker(cache_name, tmp[count], &A) == true) {
+                print("Registration failed");
+                Sleep(5000);
+                return false;
+            }
+            else {
+                if (count < 2)
+                    state[count++] = true;
+                else {
+                    if (strcmp(tmp[1], tmp[2]) != 0) {
+                        print("Registration failed");
+                        Sleep(5000);
+                        return false;
+                    }
+                    else {
+                        print("Registration complete");
+                        state[count++] = true;
+                    }
+                }
+            }
+        }
+    }
+
+
+    //please forgive me for the upcoming 6 lines
+    strcpy(tmp[3], "Your username: ");
+    strcpy(tmp[4], "Your password: ");
+    strcat(tmp[3], tmp[0]);
+    strcat(tmp[4], tmp[2]);
+    strcpy(tmp[0], tmp[3]);
+    strcpy(tmp[2], tmp[4]);
+
+    tostring(tmp[1], id_gen());
+
+    system("cls");
+    print(tmp[0]);
+    print(tmp[1]);
+    print(tmp[2]);
+
+    for (int i = 0; i < 0; ++i) {
+        if (state[i] != true)
+            return false;
+        dataWrite(cache_name, tmp[i], i + 1);
+    }
+    Sleep(5000);
+    return true;
+}
+
+User showBalance(const char file[], unsigned mode, char name[], User *creds) {
+    //mode = 0 is for transfer money; 1 is for general use
+    //if 
+
+}
+
+
+int userInterface(bool *status, int instance) {
     //move of arrow
     bool state = true;
     int selCode = 0;
-
- 
-    char options[][16] = { "Register", "Login", "Balance", "Transfer" };
+    User creds;
+    const char options[][16] = {"Register", "Login", "Balance", "Transfer"};
     int selBlocks[][2] = { {0, 1}, {2, 3} };
+    char printName[100];
 
     do {
         //if presses any of the movement keys then do modullus 2 between selCode and 1 in order to figure out which option is selected
@@ -127,38 +215,55 @@ int userInterface(bool *status, int instance, User *creds, int *userCount) {
             state = true;
         }
 
-        if (true == state) {
+        //switch statements unable to make since GetAsyncKeyState(VK_RETURN) & 0x8000 is not liked by switch, same as selBlocks[instance][selCode] == n
+        if (GetAsyncKeyState(VK_RETURN) & 0x8000) {
+            if (selBlocks[instance][selCode] == 0) {
+                // register
+                system("cls");
+                registUser();
+                selBlocks[instance][selCode] = 1;
+            }
+            if (selBlocks[instance][selCode] == 1) {
+                // login
+                system("cls");
+                status = loginUser(&creds);
+                if (status == true)
+                    return 1;
+
+            }
+            if (selBlocks[instance][selCode] == 2) {
+                // balance
+
+            }
+            if (selBlocks[instance][selCode] == 3) {
+                // transfer
+
+            }
+            
+        }
+
+        if (state) {
             system("cls");
             if (status != true) {
                 print("Login status: false");
             }
             else {
-                print(strcat("\n\nCurrently logged in as:", creds->name, "\n\n"));
+                strcpy(printName, "\n\nCurrently logged in as: ");
+                print(strcat(printName, creds.name));
             }
             print(strupr(options[selBlocks[instance][selCode]]));
             print(strlwr(options[selBlocks[instance][selCode ^ 1]]));
             state = false;
         }
-
-        if (GetAsyncKeyState(VK_RETURN)) {
-            if (selBlocks[instance][selCode] == 0)
-                registerUser(&creds, userCount);
-        }
-
-
     } while (1);
-
-    return state;
 }
 
 void main() {
     int instance = 0;
-    //login status
     bool status = false;
-    User creds;
-    int userCount;
     while (1) {
-        //addition of state to instance in order to increase the value thus leading to a different assortment of options
-        instance += userInterface(&status, instance, &creds, &userCount);
+        instance += userInterface(&status, instance);
+        if (instance == 0)
+            status = false;
     }
 }
