@@ -38,7 +38,7 @@ void dataWrite(const char file_path[], char x[], int num) {
             strcat(mod, "\n");
     }
 
-    fwrite(mod, 1, sizeof(mod), cache);
+    fwrite(mod, 1, strlen(mod), cache);
     free(mod);
     fclose(cache);
 }
@@ -62,7 +62,7 @@ void tostring(char str[], int num)
     str[len] = '\0';
 }
 
-bool occuranceChecker(const char* file_path, const char* target_string, User* name) {
+bool occuranceChecker(const char* file_path, const char* target_string) {
     FILE* file = fopen(file_path, "rb+");
     if (file == NULL) {
         perror("Error opening file");
@@ -86,7 +86,6 @@ bool occuranceChecker(const char* file_path, const char* target_string, User* na
     char* found_position = strstr(binary_data, target_string);
 
     if (found_position != NULL) {
-        strcpy(&name->name, target_string);
         size_t index = found_position - binary_data;
         return true;
     }
@@ -97,7 +96,7 @@ bool occuranceChecker(const char* file_path, const char* target_string, User* na
     free(binary_data);
 }
 
-bool loginUser(User* creds) {
+bool loginUser(char* name) {
     char cache_name[] = "database.bin";
     bool state[] = { false, false, false };
     const char prompts[][30] = { "Enter your username: ", "Enter your id: ", "Enter your password: " };
@@ -107,8 +106,9 @@ bool loginUser(User* creds) {
     while (count < 3) {
         print(prompts[count]);
         if (scanf("%18s", &tmp)) {
-            if (occuranceChecker(cache_name, tmp, &creds->name)) {
-                
+            if (occuranceChecker(cache_name, tmp)) {
+                if (count == 0)
+                    strcpy(name, tmp);
                 state[count++] = true;
             }
             else return false;
@@ -124,13 +124,13 @@ int id_gen() {
     while (1) {
         int id = rand(time(NULL));
         tostring(tmp, id);
-        if (occuranceChecker("database.bin", tmp, &A) == false)
+        if (occuranceChecker("database.bin", tmp) == false)
             return id;
     }
 }
 
 
-
+/*
 bool registUser() {
     char cache_name[] = "database.bin";
     bool state[] = { false, false, false };
@@ -168,14 +168,13 @@ bool registUser() {
 
 
     //please forgive me for the upcoming 6 lines
-    strcpy(tmp[3], "Your username: ");
-    strcpy(tmp[4], "Your password: ");
-    strcat(tmp[3], tmp[0]);
-    strcat(tmp[4], tmp[2]);
+ 
     strcpy(tmp[0], tmp[3]);
     strcpy(tmp[2], tmp[4]);
-
-    tostring(tmp[1], id_gen());
+    char id[7];
+    tostring(id, id_gen());
+    strcpy(tmp[1], "Your id is: ");
+    strcat(tmp[1], id);
 
     system("cls");
     print(tmp[0]);
@@ -191,18 +190,119 @@ bool registUser() {
     return true;
 }
 
-User showBalance(const char file[], unsigned mode, char name[], User *creds) {
-    //mode = 0 is for transfer money; 1 is for general use
-    //if 
+redundant as it has been deemed too little time to fix this
+*/
+
+
+bool registerUser() {
+    FILE* cache;
+    cache = fopen("database.bin", "ab+");
+    const char prompts[][30] = { "Enter your full name: ", "Enter your password: ", "Reenter your password: " };
+    bool flags[3] = { false, false, false };
+    int count = 0;
+    int size[3] = { 30, 20, 20 };
+    char tmp[3][30] = { 0 };
+    print("Registration\n");
+    do {
+        print(prompts[count]);
+        if (scanf("%29s", tmp[count]) == 1) {
+            if (strlen(tmp[count]) <= size[count]) {
+                if (count < 2) {
+                    flags[count++] = true;
+                }
+                else if (count == 2) {
+                    if (strcmp(tmp[1], tmp[2]) == 0) {
+                        flags[count++] = true;
+                    }
+                    else {
+                        print("Passwords do not match. Please re-enter.\n");
+                        count = 0;
+                    }
+                }
+            }
+            else {
+                print("Invalid input\n");
+                count = 0;
+            }
+        }
+        else {
+            print("Invalid input\n");
+            count = 0;
+            scanf("%*s");
+        }
+    } while (count < 3);
+
+
+    for (int i = 0; i < 3; ++i) {
+        if (!flags[i]) {
+            print("Registration failed. Please try again.\n");
+            fclose(cache);
+            return false;
+        }
+    }
+    time_t t1;
+    srand((unsigned)time(&t1));
+    char bonkers[7] = { 0 };
+    for (int i = 0; i < 6; ++i) {
+        char frac_id = (rand() % 10) + '0';
+        bonkers[i] = frac_id;
+    }
+    printf("\nName: %s, User id: %s, Password: %s", tmp[0], bonkers, tmp[1]);
+
+
+    fprintf(cache, "\n%s\n%s\n%s\n--------------", tmp[0], bonkers, tmp[1]);
+    fclose(cache);
+    Sleep(5000);
+    return true;
+}
+
+void transferMoney() {
 
 }
 
+double showBalance(const char file[], unsigned mode, char* name) {
+    double money;
 
-int userInterface(bool *status, int instance) {
+    char* fpn = (char*)malloc(strlen(name) + 4);
+    strcpy(fpn, name);
+    strcat(fpn, ".bin");
+
+    FILE* fp = (fpn, "rb+");
+    
+    if (fpn == NULL)
+        money = 0;
+    else
+        fscanf(fp, "%.2f", &money);
+
+    char tmp[2][30];
+    //i dont rememeber how to write string into a 2d array
+    strcpy(tmp[0], "your remaining balance is: ");
+    //0 - to get money from showbalance to transfers, 1 - showbalance functionality, 
+    switch (mode) {
+        case 0:
+            free(fpn);
+            fclose(fp);
+            return money;
+            break;
+        case 1:
+            tostring(tmp[1], money);
+            strcat(tmp[0], tmp[1]);
+            print(tmp[0]);
+            Sleep(5000);
+            free(fpn);
+            fclose(fp);
+            break;
+    }
+
+    return money;
+}
+
+
+int userInterface(bool *status, int instance, char* NAME) {
     //move of arrow
     bool state = true;
     int selCode = 0;
-    User creds;
+    char name[18];
     const char options[][16] = {"Register", "Login", "Balance", "Transfer"};
     int selBlocks[][2] = { {0, 1}, {2, 3} };
     char printName[100];
@@ -220,20 +320,22 @@ int userInterface(bool *status, int instance) {
             if (selBlocks[instance][selCode] == 0) {
                 // register
                 system("cls");
-                registUser();
+                registerUser();
                 selBlocks[instance][selCode] = 1;
             }
             if (selBlocks[instance][selCode] == 1) {
                 // login
                 system("cls");
-                status = loginUser(&creds);
+                status = loginUser(&name);
+                strcpy(NAME, name);
                 if (status == true)
                     return 1;
 
             }
             if (selBlocks[instance][selCode] == 2) {
                 // balance
-
+                //system("cls");
+                //showBalance();
             }
             if (selBlocks[instance][selCode] == 3) {
                 // transfer
@@ -244,12 +346,13 @@ int userInterface(bool *status, int instance) {
 
         if (state) {
             system("cls");
-            if (status != true) {
+            if (&status != true) {
                 print("Login status: false");
             }
             else {
+                print("Login status: true");
                 strcpy(printName, "\n\nCurrently logged in as: ");
-                print(strcat(printName, creds.name));
+                print(strcat(printName, name));
             }
             print(strupr(options[selBlocks[instance][selCode]]));
             print(strlwr(options[selBlocks[instance][selCode ^ 1]]));
@@ -261,8 +364,9 @@ int userInterface(bool *status, int instance) {
 void main() {
     int instance = 0;
     bool status = false;
+    char name[18];
     while (1) {
-        instance += userInterface(&status, instance);
+        instance += userInterface(&status, instance, name);
         if (instance == 0)
             status = false;
     }
