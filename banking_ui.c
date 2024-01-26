@@ -73,10 +73,11 @@ bool occuranceChecker(const char* file_path, const char* target_string) {
     long file_size = ftell(file);
     rewind(file);
 
-    char* binary_data = (char*)malloc(file_size);
+    char* binary_data = (char*) malloc(file_size);
     if (binary_data == NULL) {
         perror("Memory allocation error");
         fclose(file);
+        free(binary_data);
         return true;
     }
 
@@ -87,16 +88,17 @@ bool occuranceChecker(const char* file_path, const char* target_string) {
 
     if (found_position != NULL) {
         size_t index = found_position - binary_data;
+        free(binary_data);
         return true;
     }
     else {
+        free(binary_data);
         return false;
     }
 
-    free(binary_data);
 }
 
-bool loginUser(char* name) {
+bool loginUser(char *string) {
     char cache_name[] = "database.bin";
     bool state[] = { false, false, false };
     const char prompts[][30] = { "Enter your username: ", "Enter your id: ", "Enter your password: " };
@@ -106,9 +108,9 @@ bool loginUser(char* name) {
     while (count < 3) {
         print(prompts[count]);
         if (scanf("%18s", &tmp)) {
+            if (count == 0)
+                strcpy(string, tmp);
             if (occuranceChecker(cache_name, tmp)) {
-                if (count == 0)
-                    strcpy(name, tmp);
                 state[count++] = true;
             }
             else return false;
@@ -250,7 +252,7 @@ bool registerUser() {
     printf("\nName: %s, User id: %s, Password: %s", tmp[0], bonkers, tmp[1]);
 
 
-    fprintf(cache, "\n%s\n%s\n%s\n--------------", tmp[0], bonkers, tmp[1]);
+    fprintf(cache, "--------------\n%s\n%s\n%s\n--------------", tmp[0], bonkers, tmp[1]);
     fclose(cache);
     Sleep(5000);
     return true;
@@ -260,13 +262,14 @@ void transferMoney() {
 
 }
 
-double showBalance(const char file[], unsigned mode, char* name) {
+double showBalance(const char file[], unsigned mode, char name[]) {
     double money;
+
+
 
     char* fpn = (char*)malloc(strlen(name) + 4);
     strcpy(fpn, name);
     strcat(fpn, ".bin");
-
     FILE* fp = (fpn, "rb+");
     
     if (fpn == NULL)
@@ -275,7 +278,7 @@ double showBalance(const char file[], unsigned mode, char* name) {
         fscanf(fp, "%.2f", &money);
 
     char tmp[2][30];
-    //i dont rememeber how to write string into a 2d array
+    //i dont rememeber how to write string into a 2d array =)
     strcpy(tmp[0], "your remaining balance is: ");
     //0 - to get money from showbalance to transfers, 1 - showbalance functionality, 
     switch (mode) {
@@ -306,6 +309,8 @@ int userInterface(bool *status, int instance, char* NAME) {
     const char options[][16] = {"Register", "Login", "Balance", "Transfer"};
     int selBlocks[][2] = { {0, 1}, {2, 3} };
     char printName[100];
+    strcpy(printName, "Currently logged in as: ");
+
 
     do {
         //if presses any of the movement keys then do modullus 2 between selCode and 1 in order to figure out which option is selected
@@ -315,7 +320,7 @@ int userInterface(bool *status, int instance, char* NAME) {
             state = true;
         }
 
-        //switch statements unable to make since GetAsyncKeyState(VK_RETURN) & 0x8000 is not liked by switch, same as selBlocks[instance][selCode] == n
+        //switch statements unable to make since (GetAsyncKeyState(VK_RETURN) & 0x8000) is not liked by switch, same as selBlocks[instance][selCode] == n
         if (GetAsyncKeyState(VK_RETURN) & 0x8000) {
             if (selBlocks[instance][selCode] == 0) {
                 // register
@@ -326,11 +331,16 @@ int userInterface(bool *status, int instance, char* NAME) {
             if (selBlocks[instance][selCode] == 1) {
                 // login
                 system("cls");
-                status = loginUser(&name);
-                strcpy(NAME, name);
-                if (status == true)
-                    return 1;
 
+                status = loginUser(name);
+                
+                system("cls");
+                print(name);
+                Sleep(5000);
+                if (status == true) {
+                    instance = 1;
+                    state = true;
+                }
             }
             if (selBlocks[instance][selCode] == 2) {
                 // balance
@@ -346,14 +356,10 @@ int userInterface(bool *status, int instance, char* NAME) {
 
         if (state) {
             system("cls");
-            if (&status != true) {
+            if (instance != 1)
                 print("Login status: false");
-            }
-            else {
-                print("Login status: true");
-                strcpy(printName, "\n\nCurrently logged in as: ");
+            else
                 print(strcat(printName, name));
-            }
             print(strupr(options[selBlocks[instance][selCode]]));
             print(strlwr(options[selBlocks[instance][selCode ^ 1]]));
             state = false;
