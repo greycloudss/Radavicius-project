@@ -264,37 +264,34 @@ void transferMoney(char name[]) {
 }
 
 double showBalance(unsigned mode, char *name) {
+    char* fp_name = (char*) malloc(sizeof(name) + 5);
+    strcpy(fp_name, name);
+    strcat(fp_name, ".bin");
+    char tmp[18];
+    if (fp_name == NULL) {
+        print("Insufficient funds....");
+        Sleep(5000);
+        return 0;
+    }
     double money;
-
-
-
-    char* fpn = (char*)malloc(strlen(name) + 4);
-    strcpy(fpn, name);
-    strcat(fpn, ".bin");
-    FILE* fp = (fpn, "rb");
-    
-    if (fp == NULL)
-        money = 0;
-    else
-        fscanf(fp, "%.2f", &money);
-
-    char tmp[2][30];
-    //i dont rememeber how to write string into a 2d array =)
-    strcpy(tmp[0], "your remaining balance is: ");
-    //0 - to get money from showbalance to transfers, 1 - showbalance functionality, 
-    switch (mode) {
-        case 0:
-            break;
-        case 1:
-            tostring(tmp[1], money);
-            strcat(tmp[0], tmp[1]);
-            print(tmp[0]);
-            Sleep(5000);
-            break;
+    FILE* cache = fopen(fp_name, "ab+");
+    if (cache == NULL) {
+        print("Insufficient funds");
+        Sleep(5000);
+        return 0;
     }
 
-    free(fpn);
-    fclose(fp);
+    if (fscanf(cache, "%.2f", &money) != 1)
+        money = 0;
+    if (mode != 0) {
+        tostring(tmp, money);
+        print("your current balance is:");
+        print(tmp);
+        Sleep(5000);
+    }
+
+    free(fp_name);
+    fclose(cache);
     return money;
 }
 
@@ -347,6 +344,7 @@ int userInterface(bool *status, int instance, char* NAME) {
                 // balance
                 system("cls");
                 showBalance(1, name);
+                state = true;
             }
             if (selBlocks[instance][selCode] == 3) {
                 // transfer
