@@ -259,8 +259,54 @@ bool registerUser() {
 }
 
 void transferMoney(char name[]) {
-    
+    char* fp_name = (char*)malloc(sizeof(name) + 5);
+    strcpy(fp_name, name);
+    strcat(fp_name, ".bin");
+    FILE* cache = fopen(fp_name, "wb+");
+    char tmp[18];
+    int count = 0;
+    double moneyT;
+    do{
+        if (count != 2) {
+            if (scanf("%18s", &tmp) == 1)
+                count++;
+            else {
+                print("Invalid input.");
+                break;
+            }
+        }
+        else {
+            if (scanf("%lf", &moneyT) == 1) {
+                if (moneyT <= 0) {
+                    print("Invalid input");
+                    break;
+                }
+                else {
+                    double possibleMoney = showBalance(0, name) - moneyT;
+                    if (possibleMoney < 0) {
+                        print("Invalid input");
+                        count == 0;
+                    }
+                    else {
+                        tostring(tmp, possibleMoney);
+                        fputs(tmp, cache);
+                        print("Transaction complete");
+                        showBalance(1, name);
+                        count++;
+                        break;
+                    }
+                }
+            }
+            else {
+                print("Invalid input.");
+                break;
+            }
+        }
 
+    } while (count < 3);
+
+    free(fp_name);
+    fclose(cache);
 }
 
 double showBalance(unsigned mode, char *name) {
@@ -348,7 +394,9 @@ int userInterface(bool *status, int instance, char* NAME) {
             }
             if (selBlocks[instance][selCode] == 3) {
                 // transfer
-
+                system("cls");
+                transferMoney(name);
+                state = true;
             }
             
         }
