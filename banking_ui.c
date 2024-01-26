@@ -30,7 +30,7 @@ void dataWrite(const char file_path[], char x[], int num) {
     //no need for a null check since the flag "+" creates a file database.bin
     //int num is just a flag if the passed down var is a password its flag is 3
     FILE* cache = fopen(file_path, "ab+");
-    char* mod = (char*) malloc(strlen(x));
+    char* mod = (char*) malloc(sizeof(x));
     if (num == 3) {
         free(mod);
         char* mod = (char*)malloc(strlen(x) + num);
@@ -258,11 +258,12 @@ bool registerUser() {
     return true;
 }
 
-void transferMoney() {
+void transferMoney(char name[]) {
+    
 
 }
 
-double showBalance(const char file[], unsigned mode, char name[]) {
+double showBalance(unsigned mode, char *name) {
     double money;
 
 
@@ -270,9 +271,9 @@ double showBalance(const char file[], unsigned mode, char name[]) {
     char* fpn = (char*)malloc(strlen(name) + 4);
     strcpy(fpn, name);
     strcat(fpn, ".bin");
-    FILE* fp = (fpn, "rb+");
+    FILE* fp = (fpn, "rb");
     
-    if (fpn == NULL)
+    if (fp == NULL)
         money = 0;
     else
         fscanf(fp, "%.2f", &money);
@@ -283,20 +284,17 @@ double showBalance(const char file[], unsigned mode, char name[]) {
     //0 - to get money from showbalance to transfers, 1 - showbalance functionality, 
     switch (mode) {
         case 0:
-            free(fpn);
-            fclose(fp);
-            return money;
             break;
         case 1:
             tostring(tmp[1], money);
             strcat(tmp[0], tmp[1]);
             print(tmp[0]);
             Sleep(5000);
-            free(fpn);
-            fclose(fp);
             break;
     }
 
+    free(fpn);
+    fclose(fp);
     return money;
 }
 
@@ -335,7 +333,10 @@ int userInterface(bool *status, int instance, char* NAME) {
                 status = loginUser(name);
                 
                 system("cls");
+
+                print("Welcome Mr/Mrs. ");
                 print(name);
+                strcat(printName, name);
                 Sleep(5000);
                 if (status == true) {
                     instance = 1;
@@ -344,8 +345,8 @@ int userInterface(bool *status, int instance, char* NAME) {
             }
             if (selBlocks[instance][selCode] == 2) {
                 // balance
-                //system("cls");
-                //showBalance();
+                system("cls");
+                showBalance(1, name);
             }
             if (selBlocks[instance][selCode] == 3) {
                 // transfer
@@ -359,7 +360,8 @@ int userInterface(bool *status, int instance, char* NAME) {
             if (instance != 1)
                 print("Login status: false");
             else
-                print(strcat(printName, name));
+                print(printName);
+
             print(strupr(options[selBlocks[instance][selCode]]));
             print(strlwr(options[selBlocks[instance][selCode ^ 1]]));
             state = false;
