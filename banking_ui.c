@@ -351,6 +351,11 @@ void main() {
     int instance = 0;
     bool status = false;
     char name[18];
+    print("|\\/\\/| Welcome to the Levi banking System |\\/\\/|\n");
+    print("This banking system is only available to select few");
+    print("Thus behave or measures will be taken\n\n");
+    print("Enjoy your stay");
+    Sleep(5000);
     while (1) {
         instance += userInterface(&status, instance, name);
         if (instance == 0)
