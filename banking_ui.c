@@ -5,6 +5,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <string.h>
+#include <assert.h>
 #include "addon.h"
 #define strupr _strupr
 #define strlwr _strlwr
@@ -33,6 +34,7 @@ bool loginUser(char *string) {
                 strcpy(string, tmp);
             if (occuranceChecker(cache_name, tmp)) {
                 state[count++] = true;
+                
             }
             else return false;
         }
@@ -46,6 +48,7 @@ int id_gen() {
     while (1) {
         int id = rand(time(NULL));
         tostring(tmp, id);
+        
         if (occuranceChecker("database.bin", tmp) == false)
             return id;
     }
@@ -213,6 +216,7 @@ double showBalance(unsigned mode, char *name) {
         Sleep(5000);
     }
 
+    assert(money >= 0);
     free(fp_name);
     fclose(cache);
     return money;
@@ -232,41 +236,29 @@ void transferMoney(char* name) {
     char tmp[2][18];
     int count = 0;
     double moneyT;
-
-    const char prompts[][40] = { "Enter the recipients name: ", "Enter the recipients account number: ", "Enter the transfer amount: " };
-    while (count < 3) {
+    double mMoney;
+    const char prompts[][40] = { "Enter the recipients name: ", "Enter the transfer amount: ", };
+    while (count < 2) {
         print(prompts[count]);
-        if (count < 2) {
-            if (scanf("%18s", &tmp[count]) == 1)
-                count++;
-            else
-                count = 0;
+        if (count == 0) {
+            scanf("%18s", tmp[count]);
+            count++;
         }
         else {
-            print("asdasdasdasdaas");
             scanf("%.2lf", &moneyT);
-                double possibleMoney = showBalance(0, name) - moneyT;
-                if (moneyT <= 0) {
-                    print("Invalid input");
-                    break;
-                }
-                else {
-                    if (possibleMoney < 0) {
-                        print("Invalid input");
-                        showBalance(1, name);
-                        break;
-                    }
-                    else {
-                        tostring(tmp, possibleMoney);
-                        fputs(tmp, cache);
-                        print("Transaction complete");
-                        break;
-                    }
-                }
+            mMoney = showBalance(0, name) - moneyT;
+            if (mMoney >= 0) {
+                print("Transaction complete");
+                showBalance(1, name);
+                Sleep(5000);
                 count++;
-
-                Sleep(2000);
+            }
+            else {
+                print("invalid input");
+                count = 0;
+            }
         }
+        
     }
 
     free(fp_name);
@@ -283,7 +275,10 @@ int userInterface(bool *status, int instance, char* NAME) {
     int selBlocks[][2] = { {0, 1}, {2, 3} };
     char printName[100];
     strcpy(printName, "Currently logged in as: ");
-
+    if (instance == 1) {
+        strcat(printName, NAME);
+        strcpy(name, NAME);
+    }
 
     do {
         //if presses any of the movement keys then do modullus 2 between selCode and 1 in order to figure out which option is selected
@@ -306,16 +301,16 @@ int userInterface(bool *status, int instance, char* NAME) {
                 system("cls");
 
                 status = loginUser(name);
-                
+                assert(status != NULL);
                 system("cls");
 
                 print("Welcome Mr/Mrs. ");
                 print(name);
-                strcat(printName, name);
+                
+                strcpy(NAME, name);
                 Sleep(3000);
                 if (status == true) {
-                    instance = 1;
-                    state = true;
+                    return 1;
                 }
             }
             if (selBlocks[instance][selCode] == 2) {
