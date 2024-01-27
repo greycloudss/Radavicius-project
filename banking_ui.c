@@ -5,6 +5,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <string.h>
+#include "addon.h"
 #define strupr _strupr
 #define strlwr _strlwr
 #define MAX_USERS 1000
@@ -17,86 +18,6 @@ typedef struct {
     double balance;
 } User;
 
-
-
-//printing a somewhat centered thing
-void print(char string[]) {
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    int ret = GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-    printf("\n\n%*s\n", (csbi.dwSize.X + strlen(string)) / 2, string, csbi.dwSize.X - strlen(string) / 2, "");
-}
-
-void dataWrite(const char file_path[], char x[], int num) {
-    //no need for a null check since the flag "+" creates a file database.bin
-    //int num is just a flag if the passed down var is a password its flag is 3
-    FILE* cache = fopen(file_path, "ab+");
-    char* mod = (char*) malloc(sizeof(x));
-    if (num == 3) {
-        free(mod);
-        char* mod = (char*)malloc(strlen(x) + num);
-        for (int i = 0; i < num; ++i)
-            strcat(mod, "\n");
-    }
-
-    fwrite(mod, 1, strlen(mod), cache);
-    free(mod);
-    fclose(cache);
-}
-
-void tostring(char str[], int num)
-{
-    int i, rem, len = 0, n;
-
-    n = num;
-    while (n != 0)
-    {
-        len++;
-        n /= 10;
-    }
-    for (i = 0; i < len; i++)
-    {
-        rem = num % 10;
-        num = num / 10;
-        str[len - (i + 1)] = rem + '0';
-    }
-    str[len] = '\0';
-}
-
-bool occuranceChecker(const char* file_path, const char* target_string) {
-    FILE* file = fopen(file_path, "rb+");
-    if (file == NULL) {
-        perror("Error opening file");
-        return true;
-    }
-
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-    rewind(file);
-
-    char* binary_data = (char*) malloc(file_size);
-    if (binary_data == NULL) {
-        perror("Memory allocation error");
-        fclose(file);
-        free(binary_data);
-        return true;
-    }
-
-    fread(binary_data, 1, file_size, file);
-    fclose(file);
-
-    char* found_position = strstr(binary_data, target_string);
-
-    if (found_position != NULL) {
-        size_t index = found_position - binary_data;
-        free(binary_data);
-        return true;
-    }
-    else {
-        free(binary_data);
-        return false;
-    }
-
-}
 
 bool loginUser(char *string) {
     char cache_name[] = "database.bin";
@@ -122,7 +43,6 @@ bool loginUser(char *string) {
 
 int id_gen() {
     char tmp[7] = { 0 };
-    User A;
     while (1) {
         int id = rand(time(NULL));
         tostring(tmp, id);
@@ -258,81 +178,38 @@ bool registerUser() {
     return true;
 }
 
-void transferMoney(char name[]) {
-    char* fp_name = (char*)malloc(sizeof(name) + 5);
-    strcpy(fp_name, name);
-    strcat(fp_name, ".bin");
-    FILE* cache = fopen(fp_name, "wb+");
-    char tmp[18];
-    int count = 0;
-    double moneyT;
-    do{
-        if (count != 2) {
-            if (scanf("%18s", &tmp) == 1)
-                count++;
-            else {
-                print("Invalid input.");
-                break;
-            }
-        }
-        else {
-            if (scanf("%lf", &moneyT) == 1) {
-                if (moneyT <= 0) {
-                    print("Invalid input");
-                    break;
-                }
-                else {
-                    double possibleMoney = showBalance(0, name) - moneyT;
-                    if (possibleMoney < 0) {
-                        print("Invalid input");
-                        count == 0;
-                    }
-                    else {
-                        tostring(tmp, possibleMoney);
-                        fputs(tmp, cache);
-                        print("Transaction complete");
-                        showBalance(1, name);
-                        count++;
-                        break;
-                    }
-                }
-            }
-            else {
-                print("Invalid input.");
-                break;
-            }
-        }
-
-    } while (count < 3);
-
-    free(fp_name);
-    fclose(cache);
-}
-
 double showBalance(unsigned mode, char *name) {
     char* fp_name = (char*) malloc(sizeof(name) + 5);
     strcpy(fp_name, name);
     strcat(fp_name, ".bin");
-    char tmp[18];
+    double money;
+
+    //dataWrite(fp_name, "300", 0);
     if (fp_name == NULL) {
         print("Insufficient funds....");
         Sleep(5000);
-        return 0;
+        money = 0;
     }
-    double money;
-    FILE* cache = fopen(fp_name, "ab+");
+    
+    FILE* cache = fopen(fp_name, "rb");
+    
     if (cache == NULL) {
         print("Insufficient funds");
         Sleep(5000);
-        return 0;
+        money = 0;
+    }
+    rewind(cache);
+    
+    if (fread(&money, sizeof(double), 1, cache) != 1) {
+        fprintf(stderr, "Error fetching money count\n");
+        money = 0;
     }
 
-    if (fscanf(cache, "%.2f", &money) != 1)
-        money = 0;
     if (mode != 0) {
-        tostring(tmp, money);
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        int ret = GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
         print("your current balance is:");
-        print(tmp);
+        printf(" %*.2f\n", (csbi.dwSize.X) / 2, money, csbi.dwSize.X / 2, "");
         Sleep(5000);
     }
 
@@ -341,6 +218,61 @@ double showBalance(unsigned mode, char *name) {
     return money;
 }
 
+void transferMoney(char* name) {
+    char* fp_name = (char*)malloc(sizeof(name) + 5);
+    strcpy(fp_name, name);
+    strcat(fp_name, ".bin");
+    FILE* cache = fopen(fp_name, "wb+");
+    if (cache == NULL) {
+        free(fp_name);
+        fclose(cache);
+        print("Unable to access your account");
+        perror("Insufficient funds");
+    }
+    char tmp[2][18];
+    int count = 0;
+    double moneyT;
+
+    const char prompts[][40] = { "Enter the recipients name: ", "Enter the recipients account number: ", "Enter the transfer amount: " };
+    while (count < 3) {
+        print(prompts[count]);
+        if (count < 2) {
+            if (scanf("%18s", &tmp[count]) == 1)
+                count++;
+            else
+                count = 0;
+        }
+        else {
+            print("asdasdasdasdaas");
+            scanf("%.2lf", &moneyT);
+                double possibleMoney = showBalance(0, name) - moneyT;
+                if (moneyT <= 0) {
+                    print("Invalid input");
+                    break;
+                }
+                else {
+                    if (possibleMoney < 0) {
+                        print("Invalid input");
+                        showBalance(1, name);
+                        break;
+                    }
+                    else {
+                        tostring(tmp, possibleMoney);
+                        fputs(tmp, cache);
+                        print("Transaction complete");
+                        break;
+                    }
+                }
+                count++;
+
+                Sleep(2000);
+        }
+    }
+
+    free(fp_name);
+    fclose(cache);
+    return;
+}
 
 int userInterface(bool *status, int instance, char* NAME) {
     //move of arrow
@@ -380,7 +312,7 @@ int userInterface(bool *status, int instance, char* NAME) {
                 print("Welcome Mr/Mrs. ");
                 print(name);
                 strcat(printName, name);
-                Sleep(5000);
+                Sleep(3000);
                 if (status == true) {
                     instance = 1;
                     state = true;
@@ -409,7 +341,7 @@ int userInterface(bool *status, int instance, char* NAME) {
                 print(printName);
 
             print(strupr(options[selBlocks[instance][selCode]]));
-            print(strlwr(options[selBlocks[instance][selCode ^ 1]]));
+            print(strlwr(options[selBlocks[instance][selCode^1]]));
             state = false;
         }
     } while (1);
