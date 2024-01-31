@@ -20,7 +20,7 @@ void print(char string[]) {
 
 void dataWrite(const char file_path[], char x[], int num) {
     //no need for a null check since the flag "+" creates a file database.bin
-    //int num is just a flag if the passed down var is a password its flag is 3
+    //int num is just a flag if the passed down var is a password its0 flag is 3
     FILE* cache = fopen(file_path, "ab+");
     char* mod = (char*)malloc(sizeof(x));
     if (num == 3) {

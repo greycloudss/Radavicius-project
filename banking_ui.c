@@ -10,6 +10,11 @@
 #define strupr _strupr
 #define strlwr _strlwr
 #define MAX_USERS 1000
+/*
+* Autorius: Dovydas Levinas
+* versija 2.0
+* Kuria failus ir i juos raso, banko sys simulatorius-ish; veikia kai uzsinori
+*/
 
 typedef struct {
     bool status;
@@ -20,6 +25,13 @@ typedef struct {
 } User;
 
 
+void clearBuffer() {
+    char c;
+    do {
+        c = getchar();
+    } while (c != '\n' && c != EOF);
+}
+
 bool loginUser(char *string) {
     char cache_name[] = "database.bin";
     bool state[] = { false, false, false };
@@ -29,9 +41,10 @@ bool loginUser(char *string) {
     print("Login");
     while (count < 3) {
         print(prompts[count]);
-        if (scanf("%18s", &tmp)) {
-            if (count == 0)
+        if (scanf("%18s", &tmp) && getchar() == '\n') {
+            if (count == 0) {
                 strcpy(string, tmp);
+            }
             if (occuranceChecker(cache_name, tmp)) {
                 state[count++] = true;
                 
@@ -181,8 +194,8 @@ bool registerUser() {
     return true;
 }
 
-double showBalance(unsigned mode, char *name) {
-    char* fp_name = (char*) malloc(sizeof(name) + 5);
+static double showBalance(unsigned mode, char *name) {
+    char* fp_name = malloc(sizeof(name) + sizeof(".bin"));
     strcpy(fp_name, name);
     strcat(fp_name, ".bin");
     double money;
@@ -203,7 +216,7 @@ double showBalance(unsigned mode, char *name) {
     }
     rewind(cache);
     
-    if (fread(&money, sizeof(double), 1, cache) != 1) {
+    if (fscanf(cache, "%f", &money) != 1) {
         fprintf(stderr, "Error fetching money count\n");
         money = 0;
     }
@@ -216,49 +229,58 @@ double showBalance(unsigned mode, char *name) {
         Sleep(5000);
     }
 
-    assert(money >= 0);
+    
     free(fp_name);
     fclose(cache);
     return money;
 }
 
-void transferMoney(char* name) {
-    char* fp_name = (char*)malloc(sizeof(name) + 5);
+static void transferMoney(char* name) {
+    clearBuffer();
+    system("cls");
+
+    char* fp_name = malloc(sizeof(name) + sizeof(".bin"));
     strcpy(fp_name, name);
     strcat(fp_name, ".bin");
     FILE* cache = fopen(fp_name, "wb+");
     if (cache == NULL) {
-        free(fp_name);
-        fclose(cache);
         print("Unable to access your account");
         perror("Insufficient funds");
+        Sleep(3000);
+        return;
     }
     char tmp[2][18];
     int count = 0;
     double moneyT;
     double mMoney;
+
     const char prompts[][40] = { "Enter the recipients name: ", "Enter the transfer amount: ", };
-    while (count < 2) {
-        print(prompts[count]);
-        if (count == 0) {
-            scanf("%18s", tmp[count]);
-            count++;
+    print("Since this is a private bank, only domestic transactions are available");
+
+    print(prompts[0]);
+    scanf("%18s", &tmp[0]);
+    print(prompts[1]);
+    scanf("%lf", &mMoney);
+    
+    if (fscanf(cache, "%lf", &moneyT) == 1 && fseek(cache, 0, SEEK_END)) {
+        moneyT -= mMoney;
+        if (moneyT >= 0) {
+            fprintf(cache, "%.2lf", moneyT);
+            print("Transaction complete");
+            printf("Your reimaining funds are: %.2lf", moneyT);
+            Sleep(3000);
         }
         else {
-            scanf("%.2lf", &moneyT);
-            mMoney = showBalance(0, name) - moneyT;
-            if (mMoney >= 0) {
-                print("Transaction complete");
-                showBalance(1, name);
-                Sleep(5000);
-                count++;
-            }
-            else {
-                print("invalid input");
-                count = 0;
-            }
+            print("Insuficient funds");
+            printf("Your reimaining funds are: %.2lf", moneyT);
+            Sleep(3000);
         }
-        
+    }
+    else {
+        print("Insuficient funds to transfer");
+        moneyT = 0;
+        printf("Your reimaining funds are: %.2lf", moneyT);
+        Sleep(3000);
     }
 
     free(fp_name);
@@ -273,7 +295,7 @@ int userInterface(bool *status, int instance, char* NAME) {
     char name[18];
     const char options[][16] = {"Register", "Login", "Balance", "Transfer"};
     int selBlocks[][2] = { {0, 1}, {2, 3} };
-    char printName[100];
+    char printName[40];
     strcpy(printName, "Currently logged in as: ");
     if (instance == 1) {
         strcat(printName, NAME);
@@ -303,7 +325,6 @@ int userInterface(bool *status, int instance, char* NAME) {
                 status = loginUser(name);
                 assert(status != NULL);
                 system("cls");
-
                 print("Welcome Mr/Mrs. ");
                 print(name);
                 
@@ -315,12 +336,14 @@ int userInterface(bool *status, int instance, char* NAME) {
             }
             if (selBlocks[instance][selCode] == 2) {
                 // balance
+                fflush(stdin);
                 system("cls");
                 showBalance(1, name);
                 state = true;
             }
             if (selBlocks[instance][selCode] == 3) {
                 // transfer
+                fflush(stdin);
                 system("cls");
                 transferMoney(name);
                 state = true;
